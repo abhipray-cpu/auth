@@ -1,0 +1,65 @@
+# Copyright 2026 The Auth Authors. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# golangci-lint v2 configuration for the auth library.
+# Run: golangci-lint run ./...
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - gocritic
+
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (net/http.ResponseWriter).Write
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+        - name: package-comments
+          severity: warning
+        - name: unused-parameter
+          disabled: true
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+      - path: integration/
+        linters:
+          - errcheck
+          - revive
+          - gocritic
+      - text: "stutters"
+        linters:
+          - revive
+      - text: "parameter 'ctx' seems to be unused"
+        linters:
+          - revive
+      - text: "QF1"
+        linters:
+          - staticcheck
+      - path: _test\.go
+        text: "SA9003"
+        linters:
+          - staticcheck
+      - path: _test\.go
+        linters:
+          - gocritic
+      - path: examples/
+        linters:
+          - gocritic

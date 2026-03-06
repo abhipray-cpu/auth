@@ -1,0 +1,32 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E (Docker Compose + Keycloak)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run E2E tests
+        run: |
+          go test -race -tags=integration ./integration/ \
+            -count=1 \
+            -timeout=20m \
+            -run 'TestE2E_(OIDC|mTLS|Propagation|Session|Traffic)'
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "false"

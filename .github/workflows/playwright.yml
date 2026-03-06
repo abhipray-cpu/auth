@@ -1,0 +1,32 @@
+name: Browser E2E (Playwright)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Playwright Browser Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run browser E2E tests
+        run: |
+          go test -race -tags=integration ./integration/ \
+            -count=1 \
+            -timeout=20m \
+            -run 'TestE2E_Browser'
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "false"

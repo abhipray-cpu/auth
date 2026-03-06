@@ -1,0 +1,72 @@
+# Binaries & build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.pprof
+*.coverprofile
+coverage.out
+coverage.html
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor (library uses go modules, not vendoring)
+vendor/
+
+# IDE & editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Project tracking & internal docs (not part of the released library)
+docs/tickets.md
+docs/implementation-plan.md
+docs/epic-1-3-review.md
+docs/gap-analysis.md
+docs/cross-reference-report.md
+PROJECT.md
+
+# Testcontainers / Docker temp files
+.testcontainers/
+*.log
+docker-compose.override.yml
+
+# Secrets & credentials (never commit)
+.env
+.env.*
+*.pem
+!**/testdata/*.pem
+*.key
+!**/testdata/*.key
+*.p12
+*.pfx
+credentials.json
+service-account.json
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+
+# Debug binaries
+__debug_bin*

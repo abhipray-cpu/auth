@@ -1,0 +1,32 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run integration tests
+        run: |
+          go test -race -tags=integration ./integration/ \
+            -count=1 \
+            -timeout=15m \
+            -run 'Test(Integration|E2E_Infra|E2E_OIDC|E2E_mTLS|E2E_Propagation|E2E_Session|E2E_Traffic)'
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "false"
