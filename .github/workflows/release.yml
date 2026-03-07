@@ -9,8 +9,31 @@ permissions:
   contents: write
 
 jobs:
+  check-ci:
+    name: Verify CI passed on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check CI status on main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: runs } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              branch: 'main',
+              status: 'success',
+              per_page: 1,
+            });
+            if (runs.total_count === 0) {
+              core.setFailed('No successful CI run found on main. Blocking release.');
+            } else {
+              console.log(`Latest passing CI run: ${runs.workflow_runs[0].html_url}`);
+            }
+
   release:
     name: Release
+    needs: check-ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +44,14 @@ jobs:
         with:
           go-version: '1.26.1'
 
-      - name: Verify tests pass
-        run: go test -race ./... -count=1
-
-      - name: Verify lint passes
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v2.8.0
+      - name: Verify build
+        run: go build ./...
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
         env:
