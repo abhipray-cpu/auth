@@ -2515,8 +2515,8 @@ func TestOAuth_ParseECKey_AllCurves(t *testing.T) {
 				Kid: "ec-" + tc.crv,
 				Use: "sig",
 				Crv: tc.crv,
-				X:   base64.RawURLEncoding.EncodeToString(key.PublicKey.X.Bytes()),
-				Y:   base64.RawURLEncoding.EncodeToString(key.PublicKey.Y.Bytes()),
+				X:   base64.RawURLEncoding.EncodeToString(key.PublicKey.X.Bytes()), //nolint:staticcheck
+				Y:   base64.RawURLEncoding.EncodeToString(key.PublicKey.Y.Bytes()), //nolint:staticcheck
 			}
 
 			pub, err := parseJWK(jwk)
