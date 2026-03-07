@@ -30,7 +30,7 @@ jobs:
         run: go build ./...
 
       - name: Unit tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./... -count=1
+        run: go test -race -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v github.com/abhipray-cpu/auth/integration) -count=1
 
       - name: Upload coverage
         if: matrix.go-version == '1.26.1'
