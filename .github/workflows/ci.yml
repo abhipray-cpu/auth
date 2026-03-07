@@ -34,7 +34,7 @@ jobs:
 
       - name: Upload coverage
         if: matrix.go-version == '1.26.1'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
