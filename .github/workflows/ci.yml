@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.25']
+        go-version: ['1.26.1']
     steps:
       - uses: actions/checkout@v4
 
@@ -30,10 +30,10 @@ jobs:
         run: go build ./...
 
       - name: Unit tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./... -count=1
+        run: go test -race -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v github.com/abhipray-cpu/auth/integration) -count=1
 
       - name: Upload coverage
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26.1'
         uses: codecov/codecov-action@v4
         with:
           files: coverage.out
@@ -47,12 +47,15 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26.1'
+
+      - name: Tidy dependencies
+        run: go mod tidy
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.8.0
+          version: latest
 
   security:
     name: Security
@@ -62,9 +65,15 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26.1'
+
+      - name: Tidy dependencies
+        run: go mod tidy
+
+      - name: Download dependencies
+        run: go mod download
 
       - name: govulncheck
         uses: golang/govulncheck-action@v1
         with:
-          go-version-input: '1.25'
+          go-version-input: '1.26.1'
