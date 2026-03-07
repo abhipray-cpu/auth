@@ -4,12 +4,13 @@
   <p><em>Latin: "one who certifies" — pluggable authentication & identity propagation for Go</em></p>
 </div>
 
-[![CI](https://github.com/abhipray-cpu/Attestor/actions/workflows/ci.yml/badge.svg)](https://github.com/abhipray-cpu/Attestor/actions/workflows/ci.yml)
+[![CI](https://github.com/abhipray-cpu/Attestor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/abhipray-cpu/Attestor/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/abhipray-cpu/auth.svg)](https://pkg.go.dev/github.com/abhipray-cpu/auth)
 [![Go Report Card](https://goreportcard.com/badge/github.com/abhipray-cpu/auth)](https://goreportcard.com/report/github.com/abhipray-cpu/auth)
 [![Coverage](https://codecov.io/gh/abhipray-cpu/Attestor/branch/main/graph/badge.svg)](https://codecov.io/gh/abhipray-cpu/Attestor)
-![Go Version](https://img.shields.io/github/go-mod/go-version/abhipray-cpu/Attestor)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/abhipray-cpu/Attestor)](https://github.com/abhipray-cpu/Attestor)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/abhipray-cpu/Attestor)](https://github.com/abhipray-cpu/Attestor/releases/latest)
 
 A pluggable authentication library for Go. Handle credential verification, session management, identity propagation, and protocol bindings (HTTP middleware, gRPC interceptors) — your business logic reads `auth.GetIdentity(ctx)` and never imports auth internals.
 
