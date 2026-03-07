@@ -67,6 +67,9 @@ jobs:
         with:
           go-version: '1.24'
 
+      - name: Tidy dependencies
+        run: go mod tidy
+
       - name: govulncheck
         uses: golang/govulncheck-action@v1
         with:
