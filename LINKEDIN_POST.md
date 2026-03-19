@@ -1,89 +1,94 @@
-# LinkedIn Post — Attestor Launch
+# LinkedIn Post — 8 Open-Source Go Libraries
 
 > Copy and paste the text below directly into LinkedIn.
 
 ---
 
-🚀 **I just open-sourced Attestor — a production-ready, pluggable authentication & identity-propagation library for Go, built across 8 focused packages. Here's the full story.**
+Over the past 4 months I shipped 8 open-source Go libraries. I want to share what they are, why I built them, and what I learned along the way.
+
+Fair warning: this is a long one. 😅
 
 ---
 
-Six months ago I sat down to wire up authentication for a new Go service for the third time in my career. Copy-paste from a previous project. Tweak the session store. Argue with myself about where to put the JWT logic. Repeat.
+**A bit of context first**
 
-I was tired of it.
+I'm about 3 years into my engineering career. One pattern I've noticed in myself is that I learn best when I'm building something real — not just following a tutorial, but actually designing interfaces, writing tests, and sitting with the hard decisions that come up mid-implementation.
 
-So instead of building *another* auth system I decided to build *the last one I'd ever need to build* — modular, production-hardened, thoroughly tested, and easy enough to wire up in five minutes without reading a book.
+So I gave myself a challenge: over the next few months, pick domains I hadn't explored deeply, and build something useful in each of them. The goal was never to write the best library out there — it was to grow as an engineer, write code that someone else could pick up without needing me to explain it, and hopefully give something back to the community in the process.
 
-The result is **Attestor** (`github.com/abhipray-cpu/auth`): a single Go module composed of 8 packages, each with a clear responsibility, each independently testable, and all wired together through a thin `authsetup.New()` one-liner.
-
----
-
-### 📦 The 8 Libraries — What They Are & Why I Built Each One
-
-**1. `engine` — The orchestrator**
-Every auth operation (Register, Login, Verify, Logout, ChangePassword) flows through one place. Your business code never imports auth internals — it only calls `auth.GetIdentity(ctx)`. I wanted a single, auditable surface that every security fix could land in once.
-
-
-**2. `session` — Sessions done right**
-Redis and Postgres adapters included. 256-bit session IDs from `crypto/rand`, SHA-256-hashed at rest, idle + absolute timeouts, concurrent session limits, and schema versioning. I was frustrated by libraries that stored the raw session ID — so I built one that hashes it by default.
-
-**3. `hash` — Argon2id with OWASP parameters**
-One file. One job: hash and verify passwords using Argon2id (19 MiB memory, 2 iterations) — the OWASP-recommended defaults. No configuration footguns.
-
-**4. `password` — NIST 800-63B policy**
-Password validation is surprisingly nuanced. This package enforces length (8–128), blocks common passwords, and optionally checks against HaveIBeenPwned's k-anonymity API — all via a composable `PasswordPolicy` interface so you can plug in your own validators.
-
-**5. `propagator` — Identity travels between services**
-The hardest part of microservices auth isn't the edge — it's passing identity *between* services securely. I built three propagators: `SignedJWTPropagator` (Ed25519, 30 s TTL, auto key-rotation, JWKS endpoint), `SessionPropagator` (shared session store), and `SPIFFEPropagator` (SPIRE workload identity).
-
-**6. `hooks` — Extend without forking**
-Before/after hooks for every auth event (login, registration, logout, password reset, magic link, account locked). The canonical use case: send a welcome email on `AfterRegister` without touching auth code. Typed payloads. Zero dependencies on auth internals.
-
-**7. `http` — Middleware that disappears**
-`RequireAuth` and `OptionalAuth` middleware, route registration helper, cookie config (Secure, HttpOnly, SameSite=Strict), and a JWKS endpoint at `/.well-known/auth-keys`. Drop it in front of any `http.Handler` and move on.
-
-**8. `grpc` — First-class gRPC support**
-Unary + streaming server and client interceptors. mTLS peer identity extraction. Identity propagation via gRPC metadata. Most auth libraries treat gRPC as an afterthought — I wanted it to be a first-class citizen from day one.
+Here's what came out of it.
 
 ---
 
-### 🔒 Production-Hardening Patterns I Applied Across Every Package
+**The 8 Libraries**
 
-These aren't optional extras — they're the baseline I held every package to:
+🔐 **Attestor** (`github.com/abhipray-cpu/auth`)
+Pluggable authentication and identity propagation for Go — password, OAuth2/OIDC, magic links, API keys, mTLS, and gRPC, all behind a single interface. The gap I was trying to fill: most Go auth libraries handle one mode well and leave you stitching everything else together. Attestor lets you wire up the whole thing with one call.
 
-- **Constant-time comparisons** everywhere credentials are verified. Timing-based user enumeration is a real attack. I benchmarked the dummy-hash path to match the real path.
-- **Generic error messages.** `"Unauthorized"` always. Never `"user not found"` or `"wrong password"` in HTTP responses.
-- **No secrets in responses.** Passwords, session IDs, and tokens never appear in response bodies, headers, or error messages.
-- **Cryptographic entropy.** Session IDs: 32 bytes from `crypto/rand`. Magic link tokens: 32 bytes from `crypto/rand`. API keys: hashed before storage.
-- **Short-lived propagation tokens.** Ed25519-signed JWTs with a 30-second TTL and automatic key rotation. An intercepted token is worthless in 30 seconds.
-- **Race-detector-clean.** Every test runs with `go test -race`. No exceptions.
-- **80 automated penetration-test cases across 12 security categories** — timing attacks, user enumeration, session fixation, CSRF, token replay, mTLS spoofing, input injection, header injection. Zero critical or high findings.
-- **960+ unit and integration tests** across 19 packages with Testcontainers (Redis, PostgreSQL, Keycloak) and end-to-end Playwright browser tests.
+⚙️ **concurx** (`github.com/abhipray-cpu/concurx`)
+Production-grade concurrency primitives — Supervisor (Erlang-style fault tolerance), WorkerGroup, Group, and 11+ patterns like CircuitBreaker, Pipeline, and ScatterGather. The core promise: if a concurx API returns nil, the accepted work will finish, exactly once. I explored this domain because I kept running into "best-effort" concurrency utilities that quietly dropped work under load.
 
----
+📋 **go-audit** (`github.com/abhipray-cpu/go-audit`)
+A versioning and audit trail library — field-level diffs, actor/reason context, hash chains, schema migration, and GDPR-compliant PII redaction, all in a single `auditor.Version(ctx, &entity)` call. Most applications eventually need to answer "what changed, when, and by whom?" I wanted a library that made that easy to add without restructuring your data layer.
 
-### 🤝 It's Open Source — Contributions Welcome!
+📬 **hashigo** (`github.com/abhipray-cpu/hashigo`)
+A multi-channel notification library — 11 channels (email, SMS, push, WhatsApp, Slack, Discord, and more) and 25 provider adapters, with priority queues, circuit breakers, rate limiting, and a dead letter queue built in. It runs inside your process, no sidecar needed. I built this because every notification system I'd seen was either too thin (just an SMTP wrapper) or too heavy (a full external service).
 
-Attestor is licensed under **Apache 2.0** and I genuinely want collaborators.
+🔄 **morpheus** (`github.com/abhipray-cpu/morpheus`)
+A data transformation library — 50+ built-in transformers, a YAML-driven rule engine, DAG pipeline orchestration with parallel execution, and PII detection and masking. The domain felt underexplored in Go. Most teams end up with ad-hoc transformation code scattered across their codebase; I wanted a composable alternative.
 
-Here's where you can make an immediate impact:
+🚦 **Niyantrak** (`github.com/abhipray-cpu/Niyantrak`)
+A rate limiting library — 5 algorithms (Token Bucket, Leaky Bucket, Fixed Window, Sliding Window, GCRA), three backends (memory, Redis, PostgreSQL), and HTTP/gRPC middleware included. The name comes from Sanskrit: "controller." I noticed that most Go rate limiting libraries either implement one algorithm or require you to bring your own storage. I wanted all of that in one place.
 
-- 🧩 **New auth modes** — WebAuthn/Passkeys, SMS OTP, TOTP/FIDO2 (`mode/` package, `auth.AuthMode` interface)
-- 🗄️ **New session adapters** — DynamoDB, MongoDB, etcd (`session/SessionStore` interface)
-- 🌐 **New propagators** — AWS IAM, Azure AD workload identity
-- 📖 **Docs & examples** — more real-world examples are always welcome
-- 🐛 **Bug reports & security findings** — see `SECURITY.md` for responsible disclosure
+🏢 **tenantkit** (`github.com/abhipray-cpu/tenantkit`)
+Transparent multi-tenancy for Go — it wraps `database/sql` and automatically injects tenant conditions into your queries, so your application code doesn't need to think about it. Adapters for Gin, Echo, Chi, Fiber, GORM, and sqlx. Building this taught me a lot about SQL parsing and the tradeoffs in transparent vs. explicit isolation.
 
-Start here: **https://github.com/abhipray-cpu/auth**
-
-Read `CONTRIBUTING.md` for setup, testing, and submission guidelines. The architecture doc in `docs/architecture.md` explains every design decision.
+🔌 **grip** (`github.com/abhipray-cpu/grip`)
+A gRPC resilience library — automatic error classification, retry and deadline management, keyed-FIFO stream ordering (per-key sequential, cross-key parallel), and OpenTelemetry/Prometheus metrics. gRPC streaming, done correctly, is surprisingly complex. grip tries to absorb that complexity so you don't have to.
 
 ---
 
-If you've ever copy-pasted auth code between projects, or spent a week fighting a JWT library, I hope Attestor saves you that time.
+**How I approached building them**
 
-⭐ Star it if it looks useful. Fork it if you want to contribute. And if you build something with it, I'd love to hear about it.
+A few things I tried to be consistent about across all 8:
+
+Before writing a single line of code, I wrote ADRs (Architecture Decision Records). It sounds like overhead, but it forced me to think through tradeoffs upfront, and it made the code more coherent. I could always come back and ask "why did I do it this way?" and have an honest answer.
+
+Every library is designed not to block your core operations. The hooks, middleware, and adapters are all opt-in. If you don't need a feature, you never touch it. I'm allergic to libraries that make you restructure your application to use them.
+
+All 8 have test coverage and end-to-end tests. I ran the race detector on every package. A few caught real bugs — the race detector more than paid for itself. Where possible I used Testcontainers for integration tests so they're reproducible.
+
+The interfaces are the contract. I tried to make each library's public surface small, stable, and self-explanatory. Someone picking up one of these should be able to understand what it does from the interfaces alone, without needing to read the internals.
 
 ---
 
-#golang #go #opensourcesoftware #opensource #authentication #security #softwaredevelopment #microservices #backenddevelopment #apidevelopment #devops #softwareengineering #programming #jwt #grpc #sessionmanagement #cryptography #cybersecurity #appsecurity #cloudsecurity #devsecops #golangnews #golangdeveloper #golangcommunity #buildinpublic #sideproject #developer #100daysofcode #techcommunity #softwarearchitecture
+**Where things stand**
+
+Honestly, these are still early. They're not battle-tested in production at scale — they're well-designed, well-tested foundations that I hope can grow into that with community feedback and adoption.
+
+If you're working on a Go service and run into one of these problems, I'd genuinely love to hear if any of these are useful. And if you find a gap, a bug, or a better design — contributions are very welcome. All 8 are open source (MIT or Apache 2.0). Each repo has a `CONTRIBUTING.md` with setup instructions and a `docs/` folder with architecture notes and usage guides.
+
+You don't need to contribute code to help — opening an issue, asking a question, or just trying it out and letting me know what you think all count.
+
+---
+
+**Links (all in one place)**
+
+- 🔐 Auth / Attestor → https://github.com/abhipray-cpu/auth
+- ⚙️ concurx → https://github.com/abhipray-cpu/concurx
+- 📋 go-audit → https://github.com/abhipray-cpu/go-audit
+- 📬 hashigo → https://github.com/abhipray-cpu/hashigo
+- 🔄 morpheus → https://github.com/abhipray-cpu/morpheus
+- 🚦 Niyantrak → https://github.com/abhipray-cpu/Niyantrak
+- 🏢 tenantkit → https://github.com/abhipray-cpu/tenantkit
+- 🔌 grip → https://github.com/abhipray-cpu/grip
+
+---
+
+In the coming weeks I'll be writing a dedicated post for each of these — why I built it, the core idea behind it, how to use it, and the guarantees it provides. If any of them caught your eye, stay tuned.
+
+Thanks for reading. 🙏
+
+---
+
+#golang #go #opensource #opensourcesoftware #softwaredevelopment #softwareengineering #backenddevelopment #microservices #programming #grpc #authentication #concurrency #ratelimiting #multitenancy #dataengineering #notifications #audittrail #buildinpublic #learninginpublic #golangnews #golangdeveloper #golangcommunity #sideproject #developer #100daysofcode #techcommunity #softwarearchitecture #devops #apidevelopment #engineeringlife
